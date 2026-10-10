@@ -442,7 +442,7 @@ export async function decideRequest(
 ): Promise<void> {
   const sql = db();
   await sql.begin(async (tx) => {
-    const rows = await tx`select * from access_requests where id = ${id}`;
+    const rows = await tx`select * from access_requests where id = ${id} for update`;
     if (!rows.length || rows[0].status !== 'pending') return;
     const req = rows[0];
 
@@ -462,7 +462,8 @@ export async function decideRequest(
         insert into grants (id, identity_id, entitlement_id, status, source,
                             granted_at, last_reviewed_at)
         values (${newId('grn')}, ${req.identity_id}, ${req.entitlement_id},
-                'active', 'request', now(), now())`;
+                'active', 'request', now(), now())
+        on conflict (identity_id, entitlement_id) where status = 'active' do nothing`;
       await writeAudit(tx, actor, 'request.approved', 'request', id,
         `Approved ${who.name}'s request for ${label} — grant provisioned.`);
     } else {
@@ -477,7 +478,7 @@ export async function decideRequest(
 export async function revokeGrant(id: string, actor: string): Promise<void> {
   const sql = db();
   await sql.begin(async (tx) => {
-    const rows = await tx`select * from grants where id = ${id}`;
+    const rows = await tx`select * from grants where id = ${id} for update`;
     if (!rows.length || rows[0].status !== 'active') return;
     const g = rows[0];
     await tx`
@@ -500,7 +501,7 @@ export async function decideReviewItem(
 ): Promise<void> {
   const sql = db();
   await sql.begin(async (tx) => {
-    const rows = await tx`select * from review_items where id = ${id}`;
+    const rows = await tx`select * from review_items where id = ${id} for update`;
     if (!rows.length || rows[0].decision !== 'pending') return;
     const item = rows[0];
 

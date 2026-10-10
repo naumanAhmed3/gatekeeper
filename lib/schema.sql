@@ -44,6 +44,8 @@ create table if not exists grants (
 
 create index if not exists grants_identity_idx on grants (identity_id);
 create index if not exists grants_entitlement_idx on grants (entitlement_id);
+create unique index if not exists grants_one_active_idx
+  on grants (identity_id, entitlement_id) where status = 'active';
 
 -- Requests for access, awaiting an approval decision.
 create table if not exists access_requests (

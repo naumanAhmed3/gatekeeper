@@ -4,7 +4,7 @@ Gatekeeper answers the three questions every access review asks: **who can
 access what, why, and whether they still should.** It models identities,
 applications, entitlements and grants; runs a **policy engine** over the access
 graph to surface real risk; handles access requests and certification reviews;
-and records every decision in an immutable audit log.
+and records every decision in an application-append-only audit log.
 
 **Live demo:** https://gatekeeper-iota.vercel.app
 
@@ -131,7 +131,10 @@ node --env-file=.env.local scripts/migrate.mjs
 pnpm dev
 ```
 
-Open http://localhost:3000 and click **Load demo data**.
+Set `GATEKEEPER_ADMIN_USER` and `GATEKEEPER_ADMIN_PASSWORD` before using any
+administrative route. To enable the destructive demo reset explicitly, also
+set `ENABLE_DESTRUCTIVE_SEED=true`. Open http://localhost:3000 and click
+**Load demo data**.
 
 ---
 
@@ -140,8 +143,9 @@ Open http://localhost:3000 and click **Load demo data**.
 - **Violations are materialised, not computed on read.** They are recomputed
   after every mutation and stored, so dashboard reads stay a single query — and
   there is an explicit *Re-run policy engine* control.
-- **The audit log is append-only.** There is no update or delete path for
-  `audit_events`; every mutation route writes one inside its transaction.
+- **The audit log is append-only through the application.** Production
+  deployments should also restrict the database role so it cannot update or
+  delete `audit_events`, and export logs to retention-controlled storage.
 - The SoD rules are a small declarative table in `lib/policy.ts` — adding a
   conflicting pair is a one-line change.
 
